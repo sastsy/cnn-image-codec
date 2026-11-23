@@ -1,0 +1,17 @@
+b,hypothesis,bytes
+1,reference,13769
+1,learned-guide,13194
+1,learned-spatial,13702
+1,learned-both,13139
+2,reference,30409
+2,learned-guide,29326
+2,learned-spatial,30316
+2,learned-both,29265
+3,reference,47864
+3,learned-guide,46813
+3,learned-spatial,47842
+3,learned-both,46809
+4,reference,65997
+4,learned-guide,65121
+4,learned-spatial,65976
+4,learned-both,65120

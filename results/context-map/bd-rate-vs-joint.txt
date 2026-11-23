@@ -1,0 +1,2 @@
+BD-Rate vs joint: -3.840%
+BD-Rate vs joint (0.2–0.9 bpp, common SSIM 0.6943–0.7920): -4.091%

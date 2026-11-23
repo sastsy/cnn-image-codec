@@ -1,0 +1,2 @@
+BD-Rate (all measured points): -19.463%
+BD-Rate (0.2–0.9 bpp, PCHIP, common SSIM 0.6943–0.7920): -15.420%

@@ -1,0 +1,2 @@
+python CNNImageCodec.py
+pause
