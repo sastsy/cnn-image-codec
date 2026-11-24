@@ -1,6 +1,7 @@
 import argparse
 from contextlib import contextmanager
 import os
+import shutil
 import csv
 import json
 from pathlib import Path
@@ -158,16 +159,34 @@ def evaluate(output, winners, test_files, test_images):
         configure(bits)
         mode, prior, test_symbols, scales, decoder = winners[bits]
         reconstructed = decoder.predict(codec.DequantizeLatents(test_symbols, scales, bits), verbose=0)
+        archive = output / 'compressed' / f'b{bits}'
+        for folder in ('baseline', 'improved', 'jpeg'):
+            (archive / folder).mkdir(parents=True, exist_ok=True)
+        np.save(archive / 'scales.npy', np.asarray(scales), allow_pickle=False)
+        shutil.copyfile(ROOT / f'models/decoder_1_{bits}.h5', archive / 'decoder.h5')
+        metadata = {
+            'bits': bits,
+            'latent_shape': list(test_symbols.shape[1:]),
+            'latent_dtype': str(test_symbols.dtype),
+            'image_order': [file.name for file in test_files],
+            'baseline_mode': 'previous',
+            'context_maps': f'../../context-maps.json',
+            'prior': f'../../learned-both-prior-b{bits}.npy',
+            'scales': 'scales.npy',
+            'decoder': 'decoder.h5',
+        }
+        (archive / 'metadata.json').write_text(json.dumps(metadata, indent=2), encoding='utf-8')
         rows = []
         jpeg_panels = []
         for i, (file, source, latent, restored) in enumerate(
                 zip(test_files, test_images, test_symbols, reconstructed)):
-            original_size = measure(Path('baseline.bin'), latent, 'previous')
-            improved_size = measure(Path('improved.bin'), latent, mode, prior)
+            original_size = measure(archive / 'baseline' / f'{file.stem}.bin', latent, 'previous')
+            improved_size = measure(archive / 'improved' / f'{file.stem}.bin', latent, mode, prior)
             quality = codec.ssim(source, restored, data_range=1.0, channel_axis=-1)
             original_bpp = original_size * 8 / PIXELS
             improved_bpp = improved_size * 8 / PIXELS
             _, jpeg_bpp, jpeg_quality = codec.JPEGRDSingleImage(source, original_bpp, i)
+            shutil.copyfile(Path('jpg') / f'image{i}.jpeg', archive / 'jpeg' / f'{file.stem}.jpeg')
             rows.append((original_bpp, improved_bpp, quality, jpeg_bpp, jpeg_quality))
             results.append((bits, file.name, original_size, improved_size, *rows[-1]))
             if bits == 2 and i < 5:
@@ -177,6 +196,7 @@ def evaluate(output, winners, test_files, test_images):
         if bits == 2:
             panel = (test_images[:5], reconstructed[:5], reconstructed[:5], jpeg_panels, rows[:5])
 
+    print(f'Compressed test files saved to: {output / "compressed"}', flush=True)
     write_csv(output / 'test.csv',
               ('b', 'image', 'baseline_bytes', 'improved_bytes', 'baseline_bpp', 'improved_bpp',
                'ae_ssim', 'jpeg_bpp', 'jpeg_ssim'), results)
